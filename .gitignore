@@ -3,7 +3,8 @@
 cookies
 *cookies.txt
 .netrc
-
+*.txt
+download.sh
 # Downloaded
 *.annotations.xml
 *.aria2
@@ -123,3 +124,4 @@ yt-dlp.zip
 # Plugins
 ytdlp_plugins/
 yt-dlp-plugins
+videos_bans_turn_private_and_reasons.json

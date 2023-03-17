@@ -4023,6 +4023,8 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
         if live_status == 'post_live':
             self.write_debug(f'{video_id}: Video is in Post-Live Manifestless mode')
 
+        from results import banned_videos
+
         if not formats:
             if not self.get_param('allow_unplayable_formats') and traverse_obj(streaming_data, (..., 'licenseInfos')):
                 self.report_drm(video_id)
@@ -4031,14 +4033,28 @@ class YoutubeIE(YoutubeBaseInfoExtractor):
                 ('errorScreen', 'playerErrorMessageRenderer'), expected_type=dict) or {}
             reason = self._get_text(pemr, 'reason') or get_first(playability_statuses, 'reason')
             subreason = clean_html(self._get_text(pemr, 'subreason') or '')
+            if (reason is not None and reason != '') or (subreason is not None and subreason != ''):
+                banned_videos[video_id] = {
+                    "reason": reason,
+                    "subreason": subreason
+                }
+
             if subreason:
                 if subreason == 'The uploader has not made this video available in your country.':
                     countries = get_first(microformats, 'availableCountries')
                     if not countries:
                         regions_allowed = search_meta('regionsAllowed')
                         countries = regions_allowed.split(',') if regions_allowed else None
+
+                    if countries is not None:
+                        banned_videos[video_id]["countries"] = countries
+
                     self.raise_geo_restricted(subreason, countries, metadata_available=True)
                 reason += f'. {subreason}'
+
+            if len(banned_videos) % 1000 == 0:
+                json.dump(banned_videos, open("banned_videos.json", "w"), indent=2)
+
             if reason:
                 self.raise_no_formats(reason, expected=True)
 
